@@ -23,12 +23,6 @@
         const fixScript=document.createElement("script");
         fixScript.src="core2-endfix.js";
         fixScript.onerror=()=>{document.getElementById("app").textContent="Trainer-Erweiterung konnte nicht geladen werden.";};
-        fixScript.onload=()=>{
-          const sourceFixScript=document.createElement("script");
-          sourceFixScript.src="core2-sourcefix.js";
-          sourceFixScript.onerror=()=>{document.getElementById("app").textContent="Quellenkorrekturen konnten nicht geladen werden.";};
-          document.body.appendChild(sourceFixScript);
-        };
         document.body.appendChild(fixScript);
       }catch(e){
         console.error(e);
