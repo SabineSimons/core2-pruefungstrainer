@@ -1,6 +1,8 @@
 (()=>{
  const ACTIVE_EXAM_KEY=KEY+'_active_exam';
  const TOPIC_PROGRESS_KEY=KEY+'_topic_progress_v2';
+ const PBQ_STATE_KEY=KEY+'_pbq_state_v2';
+ const EXPLANATIONS=window.CORE2_EXPLANATIONS||{};
 
  function loadTopicProgress(){
   try{
@@ -34,12 +36,27 @@
   let p=loadTopicProgress();p[name]={};saveTopicProgress(p);topicMenu()
  };
 
+ function correctAnswerText(q){
+  return (q.answer||[]).map(l=>{
+   let i=l.charCodeAt(0)-65,txt=(q.options||[])[i]??'';
+   return l+'. '+txt
+  }).join(' | ')
+ }
  const originalCheck=check;
  check=function(){
-  let before=state.checked,qid=state.order[state.i];
+  let before=state.checked,qid=String(state.order[state.i]),q=state.current;
   originalCheck();
-  if(!before&&state.checked&&state.topic)markTopicProgress(qid)
+  if(!before&&state.checked){
+   if(state.topic)markTopicProgress(qid);
+   let fb=document.getElementById('fb');
+   if(fb){
+    let ok=[...(state.selected||[])].sort().join()===[...(q.answer||[])].sort().join();
+    let explanation=EXPLANATIONS[qid]||'';
+    fb.innerHTML=`<div style="margin-top:14px;padding:13px;border-radius:10px;${ok?'background:#e3f6e9;border:1px solid #9ed3aa':'background:#ffe8e6;border:1px solid #efaaa3'}"><b>${ok?'✅ Richtig':'❌ Falsch'}</b><br><b>Richtige Antwort:</b> ${esc(correctAnswerText(q))}${explanation?`<br><span>${esc(explanation)}</span>`:''}</div>`
+   }
+  }
  };
+
  const originalMarkPBQ=markPBQ;
  markPBQ=function(q){
   if(state.topic)markTopicProgress(q);
@@ -55,6 +72,91 @@
    let oc=btn.getAttribute('onclick')||'';
    if(oc.includes("toggleMarked('"+q+"')"))btn.textContent=marked?'★ Markiert':'☆ Markieren'
   })
+ };
+
+ function loadPBQState(){
+  try{return JSON.parse(localStorage.getItem(PBQ_STATE_KEY)||'{}')}catch(e){return {}}
+ }
+ function savePBQValue(qid,key,val){
+  let all=loadPBQState(),q=String(qid);all[q]=all[q]||{};all[q][key]=val;
+  localStorage.setItem(PBQ_STATE_KEY,JSON.stringify(all))
+ }
+ window.pbqSetValue=savePBQValue;
+ function pbqSelect(qid,key,opts,val){
+  return `<select style="width:100%;padding:10px;border:1px solid #bcc8d9;border-radius:9px;background:#fff" onchange="pbqSetValue('${qid}','${key}',this.value)"><option value="">— auswählen —</option>${opts.map(x=>`<option ${x===val?'selected':''}>${esc(x)}</option>`).join('')}</select>`
+ }
+ function pbqField(label,select){return `<div style="border:1px solid #ddd;border-radius:10px;padding:11px;background:#fff"><b>${esc(label)}</b><div style="margin-top:7px">${select}</div></div>`}
+ function pbqForm(qid,v){
+  if(qid==='1'){
+   let ips=['169.254.17.1','224.0.0.1','50.90.234.1','127.1.0.1','192.168.10.1','10.100.0.1'];
+   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+    ${pbqField('WLAN-AP · LAN-IP',pbqSelect(qid,'apip',ips,v.apip))}
+    ${pbqField('WLAN-Verschlüsselung',pbqSelect(qid,'enc',['TLS 1.2','WPA2 PSK','L2TP/IPsec','WPA2 Enterprise'],v.enc))}
+    ${pbqField('Router · Portweiterleitung',pbqSelect(qid,'port',['Allow TCP Any 3347','Allow TCP Any 3306','Allow TCP Any 25','Allow TCP Any 23','Allow TCP Any 3389'],v.port))}
+    ${pbqField('Firewall · LAN-IP zum geschützten Subnetz',pbqSelect(qid,'fwip',ips,v.fwip))}
+    ${pbqField('Windows-PC platzieren',pbqSelect(qid,'pc',['Hinter dem Router / Portweiterleitung','Am WLAN-Access-Point','Im geschützten Subnetz'],v.pc))}
+    ${pbqField('Spielkonsole platzieren',pbqSelect(qid,'console',['Am WLAN-Access-Point','Hinter der Firewall','Direkt im geschützten Subnetz'],v.console))}
+   </div>`
+  }
+  if(qid==='19'){
+   let sets=[
+    ['Ich helfe Ihnen heute gerne weiter.','Haben Sie versucht, den Router neu zu starten?','Welche Firmwareversion läuft?','Lesen Sie zuerst die FAQ.'],
+    ['Ist dies der erste Router in Ihrem Büro?','Ist Ihr Internetanbieter erreichbar?','Haben Sie ein VPN?','Ist das WLAN-Signal stark?'],
+    ['Als Erstes müssen Sie das Standardpasswort ändern.','Als Erstes müssen Sie UPnP aktivieren.','Als Erstes müssen Sie die Firewall deaktivieren.','Als Erstes müssen Sie die SSID verstecken.'],
+    ['Legen Sie ein neues Passwort fest, das einen Großbuchstaben, einen Kleinbuchstaben und ein Sonderzeichen enthält.','Verwenden Sie das aufgedruckte Standardpasswort weiter.','Verwenden Sie admin/admin.','Lassen Sie das Passwortfeld leer.'],
+    ['Ja, bitte einen Neustart durchführen.','Nein, keinesfalls neu starten.','Werkseinstellungen laden.','Router ausschalten und nicht wieder einschalten.']
+   ];
+   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${sets.map((o,i)=>pbqField('Chat-Antwort '+(i+1),pbqSelect(qid,'s'+i,o,v['s'+i]))).join('')}</div>`
+  }
+  if(qid==='72'){
+   let mails=['Konto gesperrt','Teilen Sie Ihr Feedback mit','Mitarbeitereinführung','Sicherheitsupdate','Vorstellungsgespräch'];
+   return `<div>${mails.map((m,i)=>`<div style="border:1px solid #ddd;border-radius:10px;padding:11px;margin:9px 0"><b>Posteingang ${i+1}: ${esc(m)}</b><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:8px">${pbqField('Klassifizierung',pbqSelect(qid,'c'+i,['Phishing','Spam','Legitim'],v['c'+i]))}${pbqField('Maßnahme',pbqSelect(qid,'a'+i,['An Informationssicherheit melden','An IT-Sicherheitsabteilung melden','Keine weiteren Maßnahmen'],v['a'+i]))}</div></div>`).join('')}</div>`
+  }
+  if(qid==='282'){
+   let copy='copy "C:\\Program Files\\Testing\\msvcp100.dll" "\\\\User-PC02\\C$\\Windows\\System32" /h /v';
+   let cmds=['shutdown -s -f -t 0','tasklist | sort','Get-WmiObject win32_computersystem',copy,'Get-EventLog -LogName System -Newest 8','reg /s "msvcp100.reg"','ls msvc*','setx path "C:\\Windows\\System32"','regsvr32 msvcp100.dll','robocopy "\\\\User-PC02\\C$\\Windows\\System32" "C:\\Program Files (x86)\\Testing" "msvcp100.dll"','gpupdate /force'];
+   return `<div style="padding:11px;background:#111;color:#eee;border-radius:9px;font-family:monospace;margin-bottom:10px">System Error: MSVCP100.dll was not found. The application cannot start.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${pbqField('1st CLI Resolution',pbqSelect(qid,'c1',cmds,v.c1))}${pbqField('2nd CLI Resolution',pbqSelect(qid,'c2',cmds,v.c2))}</div>`
+  }
+  return ''
+ }
+ function gradePBQInteractive(qid,v){
+  if(qid==='1')return v.apip==='192.168.10.1'&&v.enc==='WPA2 PSK'&&v.port==='Allow TCP Any 3389'&&v.fwip==='10.100.0.1'&&v.pc==='Hinter dem Router / Portweiterleitung'&&v.console==='Am WLAN-Access-Point';
+  if(qid==='19'){
+   let k=['Ich helfe Ihnen heute gerne weiter.','Ist dies der erste Router in Ihrem Büro?','Als Erstes müssen Sie das Standardpasswort ändern.','Legen Sie ein neues Passwort fest, das einen Großbuchstaben, einen Kleinbuchstaben und ein Sonderzeichen enthält.','Ja, bitte einen Neustart durchführen.'];
+   return k.every((x,i)=>v['s'+i]===x)
+  }
+  if(qid==='72'){
+   let c=['Phishing','Legitim','Legitim','Spam','Legitim'],a=['An Informationssicherheit melden','Keine weiteren Maßnahmen','Keine weiteren Maßnahmen','An IT-Sicherheitsabteilung melden','Keine weiteren Maßnahmen'];
+   return c.every((x,i)=>v['c'+i]===x&&v['a'+i]===a[i])
+  }
+  if(qid==='282'){
+   let copy='copy "C:\\Program Files\\Testing\\msvcp100.dll" "\\\\User-PC02\\C$\\Windows\\System32" /h /v';
+   return v.c1===copy&&v.c2==='regsvr32 msvcp100.dll'
+  }
+  return false
+ }
+ window.checkPBQInteractive=function(qid){
+  qid=String(qid);let v=(loadPBQState()[qid]||{}),ok=gradePBQInteractive(qid,v),q=state.current;
+  state.progress[qid]=true;save();if(state.topic)markTopicProgress(qid);
+  let fb=document.getElementById('pbqfb');
+  if(fb)fb.innerHTML=`<div style="margin-top:14px;padding:13px;border-radius:10px;${ok?'background:#e3f6e9;border:1px solid #9ed3aa':'background:#ffe8e6;border:1px solid #efaaa3'}"><b>${ok?'✅ Richtig':'❌ Noch nicht richtig'}</b><br><b>Lösung:</b> ${esc(q.answer_summary||'')}</div>`
+ };
+ const originalRenderPBQ=renderPBQ;
+ renderPBQ=function(qid,q){
+  qid=String(qid);
+  if(!['1','19','72','282'].includes(qid))return originalRenderPBQ(qid,q);
+  let v=loadPBQState()[qid]||{};
+  app.innerHTML=`<section class="card"><div class="badge">${q.sourceLabel||state.mode.toUpperCase()}${state.topic?' · '+esc(state.topic):''} · Q${qid} · ${state.i+1}/${state.order.length} · Simulation/Hotspot</div><p class="q">${esc(q.prompt)}</p>${pbqForm(qid,v)}<div id="pbqfb"></div><div class="actions"><button class="secondary" onclick="prev()">← Zurück</button><button class="secondary" onclick="toggleMarked('${qid}')">${getMarked().includes(qid)?'★ Markiert':'☆ Markieren'}</button><button class="primary" onclick="checkPBQInteractive('${qid}')">Simulation prüfen</button><button class="secondary" onclick="next()">Weiter →</button><button class="secondary" onclick="home()">Menü</button></div></section>`
+ };
+
+ showExamWrong=function(){
+  let w=state.examWrong||[];
+  if(!w.length){try{let old=JSON.parse(localStorage.getItem(EXAM_KEY)||'{}');w=old.wrong||[];state.examWrong=w}catch(e){}}
+  if(!w.length){app.innerHTML=`<section class="card"><h2>✅ Keine Fehler in dieser Prüfung</h2><div class="actions"><button class="primary" onclick="home()">Hauptmenü</button></div></section>`;return}
+  app.innerHTML=`<section class="card"><div class="badge">FEHLER AUS DER PRÜFUNG</div><h2>${w.length} Fehler</h2>${w.map(x=>{
+   let correct=(x.correct||[]).map(l=>{let i=l.charCodeAt(0)-65;return l+'. '+(x.options||[])[i]}).join(' | '),ex=EXPLANATIONS[String(x.qid)]||'';
+   return `<div style="border-top:1px solid #ddd;padding:14px 0"><b>Q${x.qid}</b><p>${esc(x.prompt)}</p><div>${(x.options||[]).map((o,i)=>{let l=String.fromCharCode(65+i),sel=(x.selected||[]).includes(l),cor=(x.correct||[]).includes(l);return `<p style="margin:5px 0;padding:7px;border-radius:8px;${cor?'background:#e3f6e9;':''}${sel&&!cor?'background:#ffe8e6;':''}"><b>${l}.</b> ${esc(o)} ${cor?'✓':''}${sel&&!cor?'✕':''}</p>`}).join('')}</div><p>Deine Antwort: <b>${(x.selected||[]).join(', ')||'—'}</b><br>Richtig: <b>${esc(correct)}</b></p>${ex?`<p class="small">${esc(ex)}</p>`:''}</div>`
+  }).join('')}<div class="actions"><button class="primary" onclick="home()">Hauptmenü</button></div></section>`
  };
 
  function loadActiveExam(){
@@ -134,6 +236,7 @@
   state.exam=false;state.fullSession=false;state.variantSeed=0;
   localStorage.removeItem(KEY);localStorage.removeItem(KEY+'_session');localStorage.removeItem(EXAM_KEY);
   localStorage.removeItem(MARK_KEY);localStorage.removeItem(ACTIVE_EXAM_KEY);localStorage.removeItem(TOPIC_PROGRESS_KEY);
+  localStorage.removeItem(PBQ_STATE_KEY);
   home()
  };
 
