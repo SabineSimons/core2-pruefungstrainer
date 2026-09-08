@@ -1,1 +1,0 @@
-Testbranch für den neuen Trainer. Live/main bleibt unangetastet. Varianten werden in diesem Branch integriert und geprüft.
