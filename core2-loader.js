@@ -11,11 +11,23 @@
     const appScript=document.createElement("script");
     appScript.src="core2-app.js";
     appScript.onerror=()=>{document.getElementById("app").textContent="Trainer konnte nicht geladen werden.";};
-    appScript.onload=()=>{
-      const fixScript=document.createElement("script");
-      fixScript.src="core2-endfix.js";
-      fixScript.onerror=()=>{document.getElementById("app").textContent="Trainer-Erweiterung konnte nicht geladen werden.";};
-      document.body.appendChild(fixScript);
+    appScript.onload=async()=>{
+      try{
+        const expRaw=atob(window.CORE2_EZ||"");
+        const expBytes=new Uint8Array(expRaw.length);
+        for(let i=0;i<expRaw.length;i++) expBytes[i]=expRaw.charCodeAt(i);
+        const expStream=new Blob([expBytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+        const expCode=await new Response(expStream).text();
+        (0,eval)(expCode);
+        if(Object.keys(window.CORE2_EXPLANATIONS||{}).length!==309) throw new Error("Erklärungsbank unvollständig");
+        const fixScript=document.createElement("script");
+        fixScript.src="core2-endfix.js";
+        fixScript.onerror=()=>{document.getElementById("app").textContent="Trainer-Erweiterung konnte nicht geladen werden.";};
+        document.body.appendChild(fixScript);
+      }catch(e){
+        console.error(e);
+        document.getElementById("app").textContent="Trainer-Erklärungen konnten nicht geladen werden.";
+      }
     };
     document.body.appendChild(appScript);
   }catch(e){
