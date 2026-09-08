@@ -1,0 +1,1 @@
+Die alte Core-2-Version bleibt bis zur Prüfung erhalten. Backup-Branch: backup-live-vor-umformulierungen. Öffentliche Seitenkopie: alte-version-bis-pruefung.html
