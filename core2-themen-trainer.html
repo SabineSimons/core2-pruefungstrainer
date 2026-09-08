@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Core 2 · Themen-Trainer</title>
+<link rel="stylesheet" href="core2-style.css">
+</head>
+<body>
+<div id="app"><section class="card"><h1>Core 2 · Themen-Trainer</h1><p>Trainer wird geladen …</p></section></div>
+<script src="core2-data-01.js"></script>
+<script src="core2-data-02.js"></script>
+<script src="core2-data-03.js"></script>
+<script src="core2-data-04.js"></script>
+<script src="core2-data-05.js"></script>
+<script src="core2-data-06.js"></script>
+<script src="core2-data-07.js"></script>
+<script src="core2-data-08.js"></script>
+<script src="core2-data-09.js"></script>
+<script src="core2-data-10.js"></script>
+<script src="core2-data-11.js"></script>
+<script src="core2-fix.js"></script>
+<script src="core2-exp-data-01.js"></script>
+<script src="core2-exp-data-02.js"></script>
+<script src="core2-exp-data-03.js"></script>
+<script src="core2-exp-data-04.js"></script>
+<script src="core2-loader.js"></script>
+<script>
+(function waitForTopicTrainer(){
+  if(typeof window.resumeExam!=='function' || typeof topicProgress!=='function' || typeof startTopic!=='function' || typeof getMarked!=='function'){
+    return setTimeout(waitForTopicTrainer,50);
+  }
+
+  function topicsHome(){
+    stopExamTimer();
+    state.exam=false;
+    state.fullSession=false;
+    const marked=getMarked();
+    app.innerHTML=`<section class="card">
+      <div class="badge">CORE 2 · THEMEN-TRAINER</div>
+      <h1>Nach Themen lernen</h1>
+      <p class="small">Eigene Themenansicht. Die beiden bestehenden Core-2-Trainer bleiben unverändert. Pro Thema kannst du Original, Umformuliert oder Gemischt trainieren und den Themenfortschritt einzeln zurücksetzen.</p>
+      ${Object.keys(TOPICS).map(name=>{
+        const p=topicProgress(name), a=encodeURIComponent(name);
+        return `<div style="border-top:1px solid #ddd;padding:16px 0">
+          <h3 style="margin-bottom:6px">${esc(name)}</h3>
+          <p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}%</p>
+          <div class="modes">
+            <button class="primary" onclick="startTopic('${a}','original')">Original</button>
+            <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
+            <button class="primary" onclick="startTopic('${a}','mixed')">Gemischt</button>
+            <button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button>
+          </div>
+        </div>`
+      }).join('')}
+
+      <div style="border-top:1px solid #ddd;padding-top:16px;margin-top:6px">
+        <h3>★ Markierte Fragen</h3>
+        <p class="small">Aktuell markiert: ${marked.length}</p>
+        <div class="modes">
+          <button class="secondary" onclick="startMarked('original')">Original</button>
+          <button class="secondary" onclick="startMarked('reform')">Umformuliert</button>
+          <button class="secondary" onclick="startMarked('mixed')">Gemischt</button>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #ddd;padding-top:16px;margin-top:16px">
+        <h3>Simulationen / Hotspots</h3>
+        <div class="modes">
+          <button class="secondary" onclick="startPBQSet('original')">Original</button>
+          <button class="secondary" onclick="startPBQSet('reform')">Umformuliert</button>
+          <button class="secondary" onclick="startPBQSet('mixed')">Gemischt</button>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="secondary" onclick="location.href='core2_testtrainer_umformulierungen.html'">Zum Gesamttrainer</button>
+      </div>
+    </section>`;
+  }
+
+  home=topicsHome;
+  topicMenu=topicsHome;
+  home();
+})();
+</script>
+</body>
+</html>
