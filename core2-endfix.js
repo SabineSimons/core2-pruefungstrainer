@@ -94,39 +94,52 @@
     ${pbqField('WLAN-Verschlüsselung',pbqSelect(qid,'enc',['TLS 1.2','WPA2 PSK','L2TP/IPsec','WPA2 Enterprise'],v.enc))}
     ${pbqField('Router · Portweiterleitung',pbqSelect(qid,'port',['Allow TCP Any 3347','Allow TCP Any 3306','Allow TCP Any 25','Allow TCP Any 23','Allow TCP Any 3389'],v.port))}
     ${pbqField('Firewall · LAN-IP zum geschützten Subnetz',pbqSelect(qid,'fwip',ips,v.fwip))}
-    ${pbqField('Windows-PC platzieren',pbqSelect(qid,'pc',['Hinter dem Router / Portweiterleitung','Am WLAN-Access-Point','Im geschützten Subnetz'],v.pc))}
-    ${pbqField('Spielkonsole platzieren',pbqSelect(qid,'console',['Am WLAN-Access-Point','Hinter der Firewall','Direkt im geschützten Subnetz'],v.console))}
+    ${pbqField('Windows-PC platzieren',pbqSelect(qid,'pc',['Drahtloses AP-LAN','Hinter dem Router','Durch Firewall geschütztes Subnetz'],v.pc))}
+    ${pbqField('Spielkonsole platzieren',pbqSelect(qid,'console',['Drahtloses AP-LAN','Hinter dem Router','Durch Firewall geschütztes Subnetz'],v.console))}
    </div>`
   }
   if(qid==='19'){
-   let sets=[
-    ['Ich helfe Ihnen heute gerne weiter.','Haben Sie versucht, den Router neu zu starten?','Welche Firmwareversion läuft?','Lesen Sie zuerst die FAQ.'],
-    ['Ist dies der erste Router in Ihrem Büro?','Ist Ihr Internetanbieter erreichbar?','Haben Sie ein VPN?','Ist das WLAN-Signal stark?'],
-    ['Als Erstes müssen Sie das Standardpasswort ändern.','Als Erstes müssen Sie UPnP aktivieren.','Als Erstes müssen Sie die Firewall deaktivieren.','Als Erstes müssen Sie die SSID verstecken.'],
-    ['Legen Sie ein neues Passwort fest, das einen Großbuchstaben, einen Kleinbuchstaben und ein Sonderzeichen enthält.','Verwenden Sie das aufgedruckte Standardpasswort weiter.','Verwenden Sie admin/admin.','Lassen Sie das Passwortfeld leer.'],
-    ['Ja, bitte einen Neustart durchführen.','Nein, keinesfalls neu starten.','Werkseinstellungen laden.','Router ausschalten und nicht wieder einschalten.']
+   let replies=[
+    'Ich helfe Ihnen heute gerne weiter.',
+    'Ist dies der erste Router in Ihrem Büro?',
+    'Als Erstes müssen Sie das Standardpasswort ändern.',
+    'Legen Sie ein neues Passwort fest, das einen Großbuchstaben, einen Kleinbuchstaben und ein Sonderzeichen enthält.',
+    'Ja, bitte einen Neustart durchführen.'
    ];
-   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${sets.map((o,i)=>pbqField('Chat-Antwort '+(i+1),pbqSelect(qid,'s'+i,o,v['s'+i]))).join('')}</div>`
+   return `<div class="hint">Ordne die fünf in der Quelle bestätigten Helpdesk-Antworten der richtigen Chat-Reihenfolge zu.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${[0,1,2,3,4].map(i=>pbqField('Chat-Schritt '+(i+1),pbqSelect(qid,'s'+i,replies,v['s'+i]))).join('')}</div>`
   }
   if(qid==='72'){
    let mails=['Konto gesperrt','Teilen Sie Ihr Feedback mit','Mitarbeitereinführung','Sicherheitsupdate','Vorstellungsgespräch'];
-   return `<div>${mails.map((m,i)=>`<div style="border:1px solid #ddd;border-radius:10px;padding:11px;margin:9px 0"><b>Posteingang ${i+1}: ${esc(m)}</b><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:8px">${pbqField('Klassifizierung',pbqSelect(qid,'c'+i,['Phishing','Spam','Legitim'],v['c'+i]))}${pbqField('Maßnahme',pbqSelect(qid,'a'+i,['An Informationssicherheit melden','An IT-Sicherheitsabteilung melden','Keine weiteren Maßnahmen'],v['a'+i]))}</div></div>`).join('')}</div>`
+   return `<div>${mails.map((m,i)=>`<div style="border:1px solid #ddd;border-radius:10px;padding:11px;margin:9px 0"><b>Posteingang ${i+1}: ${esc(m)}</b><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:8px">${pbqField('Klassifizierung',pbqSelect(qid,'c'+i,['Phishing','Spam','Legitim'],v['c'+i]))}${pbqField('Maßnahme',pbqSelect(qid,'a'+i,['An Informationssicherheit melden','Keine weiteren Maßnahmen','Abbestellen','Anhang öffnen'],v['a'+i]))}</div></div>`).join('')}</div>`
   }
   if(qid==='282'){
    let copy='copy "C:\\Program Files\\Testing\\msvcp100.dll" "\\\\User-PC02\\C$\\Windows\\System32" /h /v';
-   let cmds=['shutdown -s -f -t 0','tasklist | sort','Get-WmiObject win32_computersystem',copy,'Get-EventLog -LogName System -Newest 8','reg /s "msvcp100.reg"','ls msvc*','setx path "C:\\Windows\\System32"','regsvr32 msvcp100.dll','robocopy "\\\\User-PC02\\C$\\Windows\\System32" "C:\\Program Files (x86)\\Testing" "msvcp100.dll"','gpupdate /force'];
+   let cmds=[
+    'shutdown -s -f -t 0',
+    'tasklist | sort',
+    'Get-WmiObject win32_computersystem',
+    copy,
+    'Get-EventLog -LogName System -Newest 8',
+    'reg /s "msvcp100.reg"',
+    'ls msvc*',
+    'setx path "C:\\Windows\\System32"',
+    'regsvr32 msvcp100.dll',
+    'Get-WmiObject win32_logicaldisk',
+    'robocopy "\\\\User-PC02\\C$\\Windows\\System32" "C:\\Program Files (x86)\\Testing" "msvcp100.dll"',
+    'gpupdate /force'
+   ];
    return `<div style="padding:11px;background:#111;color:#eee;border-radius:9px;font-family:monospace;margin-bottom:10px">System Error: MSVCP100.dll was not found. The application cannot start.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${pbqField('1st CLI Resolution',pbqSelect(qid,'c1',cmds,v.c1))}${pbqField('2nd CLI Resolution',pbqSelect(qid,'c2',cmds,v.c2))}</div>`
   }
   return ''
  }
  function gradePBQInteractive(qid,v){
-  if(qid==='1')return v.apip==='192.168.10.1'&&v.enc==='WPA2 PSK'&&v.port==='Allow TCP Any 3389'&&v.fwip==='10.100.0.1'&&v.pc==='Hinter dem Router / Portweiterleitung'&&v.console==='Am WLAN-Access-Point';
+  if(qid==='1')return v.apip==='192.168.10.1'&&v.enc==='WPA2 PSK'&&v.port==='Allow TCP Any 3389'&&v.fwip==='10.100.0.1'&&v.pc==='Hinter dem Router'&&v.console==='Drahtloses AP-LAN';
   if(qid==='19'){
    let k=['Ich helfe Ihnen heute gerne weiter.','Ist dies der erste Router in Ihrem Büro?','Als Erstes müssen Sie das Standardpasswort ändern.','Legen Sie ein neues Passwort fest, das einen Großbuchstaben, einen Kleinbuchstaben und ein Sonderzeichen enthält.','Ja, bitte einen Neustart durchführen.'];
    return k.every((x,i)=>v['s'+i]===x)
   }
   if(qid==='72'){
-   let c=['Phishing','Legitim','Legitim','Spam','Legitim'],a=['An Informationssicherheit melden','Keine weiteren Maßnahmen','Keine weiteren Maßnahmen','An IT-Sicherheitsabteilung melden','Keine weiteren Maßnahmen'];
+   let c=['Phishing','Legitim','Legitim','Spam','Legitim'],a=['An Informationssicherheit melden','Keine weiteren Maßnahmen','Keine weiteren Maßnahmen','An Informationssicherheit melden','Keine weiteren Maßnahmen'];
    return c.every((x,i)=>v['c'+i]===x&&v['a'+i]===a[i])
   }
   if(qid==='282'){
