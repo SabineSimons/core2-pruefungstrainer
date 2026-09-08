@@ -11,6 +11,12 @@
     const appScript=document.createElement("script");
     appScript.src="core2-app.js";
     appScript.onerror=()=>{document.getElementById("app").textContent="Trainer konnte nicht geladen werden.";};
+    appScript.onload=()=>{
+      const fixScript=document.createElement("script");
+      fixScript.src="core2-endfix.js";
+      fixScript.onerror=()=>{document.getElementById("app").textContent="Trainer-Erweiterung konnte nicht geladen werden.";};
+      document.body.appendChild(fixScript);
+    };
     document.body.appendChild(appScript);
   }catch(e){
     console.error(e);
