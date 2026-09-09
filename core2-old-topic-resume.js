@@ -25,6 +25,11 @@
     clearTopic(topic)
    }
   }
+  if(isTopic(topic)){
+   let pool=BANK.filter(q=>topicFor(q,topic)),progress=getTrainProgress(),doneMap=(progress.topics&&progress.topics[topic])||{};
+   let done=pool.filter(q=>doneMap[q.n]),open=pool.filter(q=>!doneMap[q.n]);
+   if(done.length&&open.length){train={topic,items:[...done,...shuffle(open)],index:done.length,selected:[],checked:false,correct:0,ok:false};saveCurrent();renderTraining();return}
+  }
   baseStartTraining(topic);
   saveCurrent()
  };
