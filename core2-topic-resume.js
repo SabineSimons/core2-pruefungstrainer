@@ -75,10 +75,10 @@
 
   const baseResetProgress=resetProgress;
   resetProgress=function(){
-   let before=localStorage.getItem(RESUME_KEY);
-   baseResetProgress();
-   if(before!==localStorage.getItem(RESUME_KEY))return;
-   if(!localStorage.getItem(KEY))localStorage.removeItem(RESUME_KEY)
+   let accepted=false,oldConfirm=window.confirm;
+   window.confirm=function(msg){let r=oldConfirm(msg);accepted=!!r;return r};
+   try{baseResetProgress()}finally{window.confirm=oldConfirm}
+   if(accepted)localStorage.removeItem(RESUME_KEY)
   };
  }
  install();
