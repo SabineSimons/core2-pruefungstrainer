@@ -22,10 +22,6 @@
    if(!isWrong&&i>=0)ids.splice(i,1);
    saveErrors(ids)
   }
-  function clearErrorsForTopic(name){
-   let topicSet=new Set(topicIds(name).map(String));
-   saveErrors(getErrors().filter(q=>!topicSet.has(q)))
-  }
   window.getTopicErrors=getErrors;
 
   window.startTopicErrors=function(mode){
@@ -60,14 +56,6 @@
   home=function(){baseHome();addErrorBox()};
   const baseTopicMenu=topicMenu;
   topicMenu=function(){baseTopicMenu();addErrorBox()};
-
-  const baseResetTopic=resetTopic;
-  resetTopic=function(encoded){
-   let accepted=false,oldConfirm=window.confirm;
-   window.confirm=function(msg){let r=oldConfirm(msg);accepted=!!r;return r};
-   try{baseResetTopic(encoded)}finally{window.confirm=oldConfirm}
-   if(accepted)clearErrorsForTopic(decodeURIComponent(encoded))
-  };
 
   const baseResetProgress=resetProgress;
   resetProgress=function(){
