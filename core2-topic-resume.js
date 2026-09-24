@@ -10,6 +10,22 @@
   }
   window.__core2TopicResumeInstalled=true;
 
+  // Themen sauber trennen: Eindeutige Mobile/MDM-Fragen dürfen nicht zusätzlich
+  // im Bereich „Support & Dokumentation“ auftauchen. Der bisherige Stichwortfilter
+  // konnte z. B. über „Kunde“, „Ticket“ oder „Kommunikation“ Mobile-Fragen einsortieren.
+  const baseTopicIdsForSeparation=topicIds;
+  topicIds=function(name){
+   let ids=baseTopicIdsForSeparation(name);
+   if(name==='Support & Dokumentation'){
+    const clearMobileKeys=['smartphone','mobil','mdm','android','ios','remote wipe','fernlöschung','biometr'];
+    ids=ids.filter(q=>{
+     let t=' '+topicText(q)+' ';
+     return !clearMobileKeys.some(k=>t.includes(k));
+    });
+   }
+   return ids;
+  };
+
   function loadSessions(){try{return JSON.parse(localStorage.getItem(RESUME_KEY)||'{}')}catch(e){return {}}}
   function saveSessions(o){localStorage.setItem(RESUME_KEY,JSON.stringify(o||{}))}
   function key(topic,mode){return encodeURIComponent(topic)+'|'+String(mode||'original')}
