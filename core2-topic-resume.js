@@ -17,7 +17,7 @@
   topicIds=function(name){
    let ids=baseTopicIdsForSeparation(name);
    if(name==='Support & Dokumentation'){
-    const clearMobileKeys=['smartphone','mobil','mdm','android','ios','remote wipe','fernlöschung','biometr'];
+    const clearMobileKeys=['smartphone','mobil','mdm','android','ios','remote wipe','fernlöschung','biometr',' app ','mobile device','tablet'];
     ids=ids.filter(q=>{
      let t=' '+topicText(q)+' ';
      return !clearMobileKeys.some(k=>t.includes(k));
