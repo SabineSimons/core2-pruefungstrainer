@@ -29,21 +29,41 @@ function topicText(q){let o=ORIGINAL[String(q)]||{};return ((o.prompt||'')+' '+(
 function topicIds(name){let keys=TOPICS[name]||[];return Object.keys(ORIGINAL).filter(q=>{let t=' '+topicText(q)+' ';return keys.some(k=>t.includes(k))})}
 function topicProgress(name){let ids=topicIds(name),p=loadProgress(),done=ids.filter(q=>p[q]).length;return {done,total:ids.length,pct:ids.length?Math.round(done/ids.length*100):0}}
 function topicArg(name){return encodeURIComponent(name)}
-function currentTopicStats(name,p){
- let ids=new Set(topicIds(name).map(String)),errs=[];
- try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
- let errors=errs.filter(q=>ids.has(q)).length;
- return {accuracy:p.done?Math.max(0,Math.round((p.done-errors)/p.done*100)):0,errors}
+function topicDoneIds(name){
+ let ids=topicIds(name).map(String),doneIds=[];
+ try{
+  let all=JSON.parse(localStorage.getItem(KEY+'_topic_progress_v2')||'{}'),t=all[name]||{};
+  doneIds=ids.filter(q=>!!t[q])
+ }catch(e){}
+ if(!doneIds.length){
+  let gp=loadProgress();doneIds=ids.filter(q=>!!gp[q])
+ }
+ return doneIds
 }
-function currentOverallStats(){
- let p=loadProgress(),doneIds=Object.keys(p).filter(q=>p[q]).map(String),doneSet=new Set(doneIds),errs=[];
+function currentTopicStats(name,p){
+ let ids=topicIds(name).map(String),doneIds=topicDoneIds(name),doneSet=new Set(doneIds),errs=[];
  try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
  let errors=errs.filter(q=>doneSet.has(q)).length;
- return {done:doneIds.length,accuracy:doneIds.length?Math.max(0,Math.round((doneIds.length-errors)/doneIds.length*100)):0,errors}
+ let right=Math.max(0,doneIds.length-errors);
+ let accuracy=doneIds.length?Math.round(right/doneIds.length*100):null;
+ let openIds=ids.filter(q=>!doneSet.has(q));
+ return {done:doneIds.length,right,accuracy,errors,openIds}
+}
+function currentOverallStats(){
+ let gp=loadProgress(),ids=Object.keys(ORIGINAL).map(String),doneIds=ids.filter(q=>!!gp[q]),doneSet=new Set(doneIds),errs=[];
+ try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
+ let errors=errs.filter(q=>doneSet.has(q)).length,right=Math.max(0,doneIds.length-errors);
+ return {done:doneIds.length,right,accuracy:doneIds.length?Math.round(right/doneIds.length*100):null,errors,openIds:ids.filter(q=>!doneSet.has(q))}
+}
+function qList(ids){return (ids||[]).map(q=>'Q'+q).join(', ')}
+function openQuestionsDetails(ids){
+ ids=ids||[];
+ if(!ids.length)return '<span style="font-weight:700;color:#16834f">Keine offenen Fragen</span>';
+ return '<details style="margin-top:7px"><summary style="cursor:pointer;font-weight:700">Offene Fragen anzeigen ('+ids.length+')</summary><p class="small" style="line-height:1.7;margin-top:7px">'+esc(qList(ids))+'</p></details>'
 }
 function topicMenu(){
  stopExamTimer();state.exam=false;
- app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Offen: ${Math.max(0,p.total-p.done)} · Ergebnis: ${currentTopicStats(n,p).accuracy}% · Fehler: ${currentTopicStats(n,p).errors}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
+ app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Richtig: ${currentTopicStats(n,p).right}/${currentTopicStats(n,p).done} · Ergebnis: ${currentTopicStats(n,p).accuracy===null?'—':currentTopicStats(n,p).accuracy+'%'} · Fehler: ${currentTopicStats(n,p).errors} · Offen: ${currentTopicStats(n,p).openIds.length}${openQuestionsDetails(currentTopicStats(n,p).openIds)}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
 }
 function startTopic(encoded,mode){let name=decodeURIComponent(encoded),ids=topicIds(name);if(!ids.length)return alert('Für dieses Thema wurden keine Fragen gefunden.');stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.fullSession=false;state.variantSeed=newVariantSeed();state.mode=mode;state.topic=name;state.order=ids;state.i=0;render()}
 function resetTopic(encoded){let name=decodeURIComponent(encoded);if(!confirm('Fortschritt für „'+name+'“ wirklich zurücksetzen?'))return;let p=loadProgress();for(const q of topicIds(name))delete p[q];state.progress=p;localStorage.setItem(KEY,JSON.stringify(p));topicMenu()}
@@ -95,7 +115,7 @@ function home(){
  stopExamTimer();state.exam=false;state.fullSession=false;let done=Object.keys(state.progress).length;
  app.innerHTML=`<section class="card"><h1>Core 2 · Testtrainer</h1><p>314 Originalfragen + 628 Umformulierungen. Live-Trainer bleibt unberührt.</p>
  <div class="modes"><button class="primary" onclick="start('original')">Originalfragen</button><button class="primary" onclick="start('reform')">Umformuliert</button><button class="primary" onclick="start('mixed')">Gemischt</button></div><h3>Themen-Training</h3><div class="modes"><button class="secondary" onclick="topicMenu()">Themen wählen</button></div><h3>Nur offene Fragen</h3><div class="modes"><button class="secondary" onclick="startUnanswered('original')">Original</button><button class="secondary" onclick="startUnanswered('reform')">Umformuliert</button><button class="secondary" onclick="startUnanswered('mixed')">Gemischt</button></div><p class="small">Noch offen: ${314-Object.keys(loadProgress()).filter(q=>loadProgress()[q]).length}</p><h3>Markierte Fragen</h3><div class="modes"><button class="secondary" onclick="startMarked('original')">Original</button><button class="secondary" onclick="startMarked('reform')">Umformuliert</button><button class="secondary" onclick="startMarked('mixed')">Gemischt</button></div><p class="small">Aktuell markiert: ${getMarked().length}</p><h3>Simulationen / Hotspots</h3><div class="modes"><button class="secondary" onclick="startPBQSet('original')">Original</button><button class="secondary" onclick="startPBQSet('reform')">Umformuliert</button><button class="secondary" onclick="startPBQSet('mixed')">Gemischt</button></div><h3>90-Fragen-Prüfung</h3><div class="modes"><button class="secondary" onclick="startExam('original')">Original</button><button class="secondary" onclick="startExam('reform')">Umformuliert</button><button class="secondary" onclick="startExam('mixed')">Gemischt</button></div>
- <p class="small">Gespeicherter Fortschritt: ${done} bearbeitete Quellfragen · Offen: ${Math.max(0,314-done)}.${(()=>{let s=currentOverallStats();return ' · Ergebnis: '+s.accuracy+'% · Fehler: '+s.errors})()}</p><div class="actions"><button class="danger" onclick="resetProgress()">Fortschritt zurücksetzen</button></div></section>`}
+ <p class="small">Gespeicherter Fortschritt: ${done} bearbeitete Quellfragen.${(()=>{let s=currentOverallStats();return ' · Richtig: '+s.right+'/'+s.done+' · Ergebnis: '+(s.accuracy===null?'—':s.accuracy+'%')+' · Fehler: '+s.errors+' · Offen: '+s.openIds.length})()}${openQuestionsDetails(currentOverallStats().openIds)}</p><div class="actions"><button class="danger" onclick="resetProgress()">Fortschritt zurücksetzen</button></div></section>`}
 function start(mode){stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.topic=null;state.fullSession=true;state.mode=mode;state.order=Array.from({length:314},(_,i)=>String(i+1));let old={};try{old=JSON.parse(localStorage.getItem(KEY+'_session')||'{}')}catch(e){};let resume=old.mode===mode&&Number.isInteger(old.i)&&old.i>=0&&old.i<314;state.i=resume?old.i:0;state.variantSeed=resume&&Number.isInteger(old.variantSeed)?old.variantSeed:newVariantSeed();render()}
 function render(){
  let qid=state.order[state.i],q=itemFor(qid);state.current=q;state.selected=[];state.checked=false;
