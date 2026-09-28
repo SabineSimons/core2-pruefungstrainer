@@ -45,7 +45,6 @@
         return `<div style="border-top:1px solid #ddd;padding:16px 0">
           <h3 style="margin-bottom:6px">${esc(name)}</h3>
           <p class="small">${p.done}/${p.total} bearbeitet · Richtig: ${s.right}/${s.done} · ${s.accuracy===null?'—':s.accuracy+'% richtig'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}</p>
-          ${openQuestionsDetails(s.openIds)}
           <div class="modes">
             <button class="primary" onclick="startTopic('${a}','original')">Original</button>
             <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
