@@ -14,7 +14,12 @@ const app=document.getElementById('app');
 const KEY='sabine_core2_reform_test_v1';
 const EXAM_KEY=KEY+'_last_exam';
 const MARK_KEY=KEY+'_marked';
+const ACCURACY_KEY=KEY+'_accuracy_v1';
 function loadProgress(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
+function loadAccuracy(){try{let a=JSON.parse(localStorage.getItem(ACCURACY_KEY)||'{}');if(!a||typeof a!=='object')a={};a.topics=a.topics&&typeof a.topics==='object'?a.topics:{};a.overall=a.overall&&typeof a.overall==='object'?a.overall:{};return a}catch(e){return {topics:{},overall:{}}}}
+function saveAccuracy(a){localStorage.setItem(ACCURACY_KEY,JSON.stringify(a||{topics:{},overall:{}}))}
+function recordAccuracy(qid,ok,topic){let a=loadAccuracy(),q=String(qid);a.overall[q]=!!ok;if(topic&&Object.prototype.hasOwnProperty.call(TOPICS,topic)){a.topics[topic]=a.topics[topic]||{};a.topics[topic][q]=!!ok}saveAccuracy(a)}
+function clearTopicAccuracy(name){let a=loadAccuracy();delete a.topics[name];saveAccuracy(a)}
 let state={mode:'original',order:[],i:0,selected:[],checked:false,current:null,override:null,progress:loadProgress(),topic:null,examEnd:0,examTimedOut:false,fullSession:false,variantSeed:0};
 let examTimer=null;
 function newVariantSeed(){return Math.floor(Math.random()*2)}
@@ -41,19 +46,17 @@ function topicDoneIds(name){
  return doneIds
 }
 function currentTopicStats(name,p){
- let ids=topicIds(name).map(String),doneIds=topicDoneIds(name),doneSet=new Set(doneIds),errs=[];
- try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
- let errors=errs.filter(q=>doneSet.has(q)).length;
- let right=Math.max(0,doneIds.length-errors);
- let accuracy=doneIds.length?Math.round(right/doneIds.length*100):null;
+ let ids=topicIds(name).map(String),doneIds=topicDoneIds(name),doneSet=new Set(doneIds),a=loadAccuracy(),t=(a.topics&&a.topics[name])||{};
+ let gradedIds=ids.filter(q=>Object.prototype.hasOwnProperty.call(t,q)&&typeof t[q]==='boolean');
+ let right=gradedIds.filter(q=>t[q]===true).length,errors=gradedIds.length-right,accuracy=gradedIds.length?Math.round(right/gradedIds.length*100):null;
  let openIds=ids.filter(q=>!doneSet.has(q));
- return {done:doneIds.length,right,accuracy,errors,openIds}
+ return {done:doneIds.length,graded:gradedIds.length,right,accuracy,errors,openIds}
 }
 function currentOverallStats(){
- let gp=loadProgress(),ids=Object.keys(ORIGINAL).map(String),doneIds=ids.filter(q=>!!gp[q]),doneSet=new Set(doneIds),errs=[];
- try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
- let errors=errs.filter(q=>doneSet.has(q)).length,right=Math.max(0,doneIds.length-errors);
- return {done:doneIds.length,right,accuracy:doneIds.length?Math.round(right/doneIds.length*100):null,errors,openIds:ids.filter(q=>!doneSet.has(q))}
+ let gp=loadProgress(),ids=Object.keys(ORIGINAL).map(String),doneIds=ids.filter(q=>!!gp[q]),doneSet=new Set(doneIds),a=loadAccuracy(),o=a.overall||{};
+ let gradedIds=ids.filter(q=>Object.prototype.hasOwnProperty.call(o,q)&&typeof o[q]==='boolean');
+ let right=gradedIds.filter(q=>o[q]===true).length,errors=gradedIds.length-right,accuracy=gradedIds.length?Math.round(right/gradedIds.length*100):null;
+ return {done:doneIds.length,graded:gradedIds.length,right,accuracy,errors,openIds:ids.filter(q=>!doneSet.has(q))}
 }
 function qList(ids){return (ids||[]).map(q=>'Q'+q).join(', ')}
 function openQuestionsDetails(ids){
@@ -63,10 +66,10 @@ function openQuestionsDetails(ids){
 }
 function topicMenu(){
  stopExamTimer();state.exam=false;
- app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n),s=currentTopicStats(n,p);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · Richtig: ${s.right}/${s.done} · ${s.accuracy===null?'—':s.accuracy+'% richtig'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}${openQuestionsDetails(s.openIds)}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
+ app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n),s=currentTopicStats(n,p);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · Richtig: ${s.right}/${s.graded} · ${s.accuracy===null?'—':s.accuracy+'% richtig'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}${openQuestionsDetails(s.openIds)}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
 }
 function startTopic(encoded,mode){let name=decodeURIComponent(encoded),ids=topicIds(name);if(!ids.length)return alert('Für dieses Thema wurden keine Fragen gefunden.');stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.fullSession=false;state.variantSeed=newVariantSeed();state.mode=mode;state.topic=name;state.order=ids;state.i=0;render()}
-function resetTopic(encoded){let name=decodeURIComponent(encoded);if(!confirm('Fortschritt für „'+name+'“ wirklich zurücksetzen?'))return;let p=loadProgress();for(const q of topicIds(name))delete p[q];state.progress=p;localStorage.setItem(KEY,JSON.stringify(p));topicMenu()}
+function resetTopic(encoded){let name=decodeURIComponent(encoded);if(!confirm('Fortschritt für „'+name+'“ wirklich zurücksetzen?'))return;let p=loadProgress();for(const q of topicIds(name))delete p[q];state.progress=p;localStorage.setItem(KEY,JSON.stringify(p));clearTopicAccuracy(name);topicMenu()}
 
 function stopExamTimer(){if(examTimer){clearInterval(examTimer);examTimer=null}}
 function examClock(){let ms=Math.max(0,(state.examEnd||0)-Date.now()),sec=Math.ceil(ms/1000),m=Math.floor(sec/60),s=sec%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
@@ -115,7 +118,7 @@ function home(){
  stopExamTimer();state.exam=false;state.fullSession=false;let done=Object.keys(state.progress).length;
  app.innerHTML=`<section class="card"><h1>Core 2 · Testtrainer</h1><p>314 Originalfragen + 628 Umformulierungen. Live-Trainer bleibt unberührt.</p>
  <div class="modes"><button class="primary" onclick="start('original')">Originalfragen</button><button class="primary" onclick="start('reform')">Umformuliert</button><button class="primary" onclick="start('mixed')">Gemischt</button></div><h3>Themen-Training</h3><div class="modes"><button class="secondary" onclick="topicMenu()">Themen wählen</button></div><h3>Nur offene Fragen</h3><div class="modes"><button class="secondary" onclick="startUnanswered('original')">Original</button><button class="secondary" onclick="startUnanswered('reform')">Umformuliert</button><button class="secondary" onclick="startUnanswered('mixed')">Gemischt</button></div><p class="small">Noch offen: ${314-Object.keys(loadProgress()).filter(q=>loadProgress()[q]).length}</p><h3>Markierte Fragen</h3><div class="modes"><button class="secondary" onclick="startMarked('original')">Original</button><button class="secondary" onclick="startMarked('reform')">Umformuliert</button><button class="secondary" onclick="startMarked('mixed')">Gemischt</button></div><p class="small">Aktuell markiert: ${getMarked().length}</p><h3>Simulationen / Hotspots</h3><div class="modes"><button class="secondary" onclick="startPBQSet('original')">Original</button><button class="secondary" onclick="startPBQSet('reform')">Umformuliert</button><button class="secondary" onclick="startPBQSet('mixed')">Gemischt</button></div><h3>90-Fragen-Prüfung</h3><div class="modes"><button class="secondary" onclick="startExam('original')">Original</button><button class="secondary" onclick="startExam('reform')">Umformuliert</button><button class="secondary" onclick="startExam('mixed')">Gemischt</button></div>
- <p class="small">Gespeicherter Fortschritt: ${done} bearbeitete Quellfragen.${(()=>{let s=currentOverallStats();return ' · Richtig: '+s.right+'/'+s.done+' · '+(s.accuracy===null?'—':s.accuracy+'% richtig')+' · Fehler: '+s.errors+' · Offen: '+s.openIds.length})()}${openQuestionsDetails(currentOverallStats().openIds)}</p><div class="actions"><button class="danger" onclick="resetProgress()">Fortschritt zurücksetzen</button></div></section>`}
+ <p class="small">Gespeicherter Fortschritt: ${done} bearbeitete Quellfragen.${(()=>{let s=currentOverallStats();return ' · Richtig: '+s.right+'/'+s.graded+' · '+(s.accuracy===null?'—':s.accuracy+'% richtig')+' · Fehler: '+s.errors+' · Offen: '+s.openIds.length})()}${openQuestionsDetails(currentOverallStats().openIds)}</p><div class="actions"><button class="danger" onclick="resetProgress()">Fortschritt zurücksetzen</button></div></section>`}
 function start(mode){stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.topic=null;state.fullSession=true;state.mode=mode;state.order=Array.from({length:314},(_,i)=>String(i+1));let old={};try{old=JSON.parse(localStorage.getItem(KEY+'_session')||'{}')}catch(e){};let resume=old.mode===mode&&Number.isInteger(old.i)&&old.i>=0&&old.i<314;state.i=resume?old.i:0;state.variantSeed=resume&&Number.isInteger(old.variantSeed)?old.variantSeed:newVariantSeed();render()}
 function render(){
  let qid=state.order[state.i],q=itemFor(qid);state.current=q;state.selected=[];state.checked=false;
@@ -130,7 +133,7 @@ function check(){if(state.checked)return;
  let qid=state.order[state.i],q=state.current;if(!state.selected.length)return alert('Bitte erst auswählen.');
  state.checked=true;let ok=[...state.selected].sort().join()===[...q.answer].sort().join();
  document.querySelectorAll('.option').forEach(el=>{let l=el.dataset.l;if(q.answer.includes(l))el.classList.add('correct');else if(state.selected.includes(l))el.classList.add('wrong')});
- state.progress[qid]=true;save();document.getElementById('fb').innerHTML=`<p><b>${ok?'✅ Richtig':'❌ Falsch'}</b> · Richtige Antwort: ${q.answer.join(', ')}</p>`}
+ state.progress[qid]=true;recordAccuracy(qid,ok,state.topic);save();document.getElementById('fb').innerHTML=`<p><b>${ok?'✅ Richtig':'❌ Falsch'}</b> · Richtige Antwort: ${q.answer.join(', ')}</p>`}
 function renderPBQ(qid,q){
  let ungraded=(qid==='76'||q.type==='pbq_ungraded');
  app.innerHTML=`<section class="card"><div class="badge">${q.sourceLabel||state.mode.toUpperCase()}${state.topic?' · '+esc(state.topic):''} · Q${qid} · ${state.i+1}/${state.order.length} · Simulation/Hotspot</div><p class="q">${esc(q.prompt)}</p>
@@ -191,5 +194,5 @@ function showExamWrong(){
  app.innerHTML=`<section class="card"><div class="badge">FEHLER AUS DER PRÜFUNG</div><h2>${w.length} Fehler</h2>${w.map(x=>`<div style="border-top:1px solid #ddd;padding:14px 0"><b>Q${x.qid}</b><p>${esc(x.prompt)}</p><div>${x.options.map((o,i)=>{let l=String.fromCharCode(65+i),sel=x.selected.includes(l),cor=x.correct.includes(l);return `<p style="margin:5px 0;padding:7px;border-radius:8px;${cor?'background:#e3f6e9;':''}${sel&&!cor?'background:#ffe8e6;':''}"><b>${l}.</b> ${esc(o)} ${cor?'✓':''}${sel&&!cor?'✕':''}</p>`}).join('')}</div><p>Deine Antwort: <b>${x.selected.join(', ')}</b> · Richtig: <b>${x.correct.join(', ')}</b></p></div>`).join('')}<div class="actions"><button class="primary" onclick="home()">Hauptmenü</button></div></section>`
 }
 
-function resetProgress(){if(!confirm('Gesamten Testtrainer-Fortschritt wirklich zurücksetzen?'))return;stopExamTimer();state.progress={};state.i=0;state.override=null;state.topic=null;state.examWrong=[];state.exam=false;state.fullSession=false;state.variantSeed=0;localStorage.removeItem(KEY);localStorage.removeItem(KEY+'_session');localStorage.removeItem(EXAM_KEY);localStorage.removeItem(MARK_KEY);home()}
+function resetProgress(){if(!confirm('Gesamten Testtrainer-Fortschritt wirklich zurücksetzen?'))return;stopExamTimer();state.progress={};state.i=0;state.override=null;state.topic=null;state.examWrong=[];state.exam=false;state.fullSession=false;state.variantSeed=0;localStorage.removeItem(KEY);localStorage.removeItem(KEY+'_session');localStorage.removeItem(EXAM_KEY);localStorage.removeItem(MARK_KEY);localStorage.removeItem(ACCURACY_KEY);home()}
 home();
