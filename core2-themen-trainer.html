@@ -24,7 +24,7 @@
 <script src="core2-exp-data-02.js"></script>
 <script src="core2-exp-data-03.js"></script>
 <script src="core2-exp-data-04.js"></script>
-<script src="core2-loader.js"></script>
+<script src="core2-loader.js?v=20260928-4"></script>
 <script>
 (function waitForTopicTrainer(){
   if(typeof window.resumeExam!=='function' || typeof topicProgress!=='function' || typeof startTopic!=='function' || typeof getMarked!=='function'){
@@ -42,9 +42,13 @@
       <p class="small">Eigene Themenansicht. Die beiden bestehenden Core-2-Trainer bleiben unverändert. Pro Thema kannst du Original, Umformuliert oder Gemischt trainieren und den Themenfortschritt einzeln zurücksetzen.</p>
       ${Object.keys(TOPICS).map(name=>{
         const p=topicProgress(name), a=encodeURIComponent(name);
+        let ids=new Set(topicIds(name).map(String)),errs=[];
+        try{errs=JSON.parse(localStorage.getItem('sabine_core2_topic_errors_v1')||'[]').map(String)}catch(e){}
+        const errorCount=errs.filter(q=>ids.has(q)).length;
+        const accuracy=p.done?Math.max(0,Math.round((p.done-errorCount)/p.done*100)):0;
         return `<div style="border-top:1px solid #ddd;padding:16px 0">
           <h3 style="margin-bottom:6px">${esc(name)}</h3>
-          <p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Offen: ${Math.max(0,p.total-p.done)} · Ergebnis: ${p.accuracy??0}% · Fehler: ${p.errors??0}</p>
+          <p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Offen: ${Math.max(0,p.total-p.done)} · Ergebnis: ${accuracy}% · Fehler: ${errorCount}</p>
           <div class="modes">
             <button class="primary" onclick="startTopic('${a}','original')">Original</button>
             <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
@@ -83,10 +87,10 @@
   topicMenu=topicsHome;
   home();
   const resumeScript=document.createElement('script');
-  resumeScript.src='core2-topic-resume.js?v=20260924-2';
+  resumeScript.src='core2-topic-resume.js?v=20260928-4';
   document.body.appendChild(resumeScript);
 })();
 </script>
-<script src="core2-topic-errors.js?v=20260924-2"></script>
+<script src="core2-topic-errors.js?v=20260928-4"></script>
 </body>
 </html>
