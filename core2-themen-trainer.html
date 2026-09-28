@@ -24,7 +24,7 @@
 <script src="core2-exp-data-02.js"></script>
 <script src="core2-exp-data-03.js"></script>
 <script src="core2-exp-data-04.js"></script>
-<script src="core2-loader.js?v=20260928-7"></script>
+<script src="core2-loader.js?v=20260928-10"></script>
 <script>
 (function waitForTopicTrainer(){
   if(typeof window.resumeExam!=='function' || typeof topicProgress!=='function' || typeof startTopic!=='function' || typeof getMarked!=='function'){
@@ -44,12 +44,13 @@
         const p=topicProgress(name), a=encodeURIComponent(name), s=currentTopicStats(name,p);
         return `<div style="border-top:1px solid #ddd;padding:16px 0">
           <h3 style="margin-bottom:6px">${esc(name)}</h3>
-          <p class="small">${p.done}/${p.total} bearbeitet · Richtig: ${s.right}/${s.graded} · ${s.accuracy===null?'—':s.accuracy+'% richtig'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}</p>
+          <p class="small">${p.done}/${p.total} bearbeitet · Punkte: ${s.right}/${s.graded} · Ergebnis: ${s.accuracy===null?'—':s.accuracy+'%'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}</p>
           <div class="modes">
             <button class="primary" onclick="startTopic('${a}','original')">Original</button>
             <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
             <button class="primary" onclick="startTopic('${a}','mixed')">Gemischt</button>
-            <button class="secondary" onclick="startTopicUnanswered('${a}')" ${s.openIds.length?'':'disabled'}>▶ ${s.openIds.length} offene Fragen</button>
+            <button class="secondary" onclick="startTopicUnanswered('${a}')" ${s.openIds.length?'':'disabled'}>▶ Nur offene Fragen (${s.openIds.length})</button>
+            <button class="secondary" onclick="startTopicErrorsOnly('${a}')" ${s.errors?'':'disabled'}>❌ Nur Fehler (${s.errors})</button>
             <button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button>
           </div>
         </div>`
@@ -84,10 +85,10 @@
   topicMenu=topicsHome;
   home();
   const resumeScript=document.createElement('script');
-  resumeScript.src='core2-topic-resume.js?v=20260928-7';
+  resumeScript.src='core2-topic-resume.js?v=20260928-10';
   document.body.appendChild(resumeScript);
 })();
 </script>
-<script src="core2-topic-errors.js?v=20260928-7"></script>
+<script src="core2-topic-errors.js?v=20260928-10"></script>
 </body>
 </html>
