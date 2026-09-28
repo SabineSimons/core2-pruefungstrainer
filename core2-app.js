@@ -48,9 +48,20 @@ function topicDoneIds(name){
 function currentTopicStats(name,p){
  let ids=topicIds(name).map(String),doneIds=topicDoneIds(name),doneSet=new Set(doneIds),a=loadAccuracy(),t=(a.topics&&a.topics[name])||{};
  let gradedIds=ids.filter(q=>Object.prototype.hasOwnProperty.call(t,q)&&typeof t[q]==='boolean');
- let right=gradedIds.filter(q=>t[q]===true).length,errors=gradedIds.length-right,accuracy=gradedIds.length?Math.round(right/gradedIds.length*100):null;
+ let legacyErrors=(typeof getTopicErrors==='function'?getTopicErrors():[]).map(String).filter(q=>doneSet.has(q));
+ let errors,right,graded;
+ if(gradedIds.length){
+  let exactRight=gradedIds.filter(q=>t[q]===true).length,exactWrong=gradedIds.length-exactRight;
+  let ungradedDone=doneIds.filter(q=>!gradedIds.includes(q)),legacyWrongUngraded=legacyErrors.filter(q=>ungradedDone.includes(q)).length;
+  right=exactRight+Math.max(0,ungradedDone.length-legacyWrongUngraded);
+  errors=exactWrong+legacyWrongUngraded;graded=doneIds.length
+ }else{
+  errors=legacyErrors.length;graded=doneIds.length;right=Math.max(0,graded-errors)
+ }
+ let accuracy=graded?Math.round(right/graded*100):null;
  let openIds=ids.filter(q=>!doneSet.has(q));
- return {done:doneIds.length,graded:gradedIds.length,right,accuracy,errors,openIds}
+ let errorIds=ids.filter(q=>doneSet.has(q)&&((Object.prototype.hasOwnProperty.call(t,q)&&t[q]===false)||legacyErrors.includes(q)));
+ return {done:doneIds.length,graded,right,accuracy,errors,errorIds,openIds}
 }
 function currentOverallStats(){
  let gp=loadProgress(),ids=Object.keys(ORIGINAL).map(String),doneIds=ids.filter(q=>!!gp[q]),doneSet=new Set(doneIds),a=loadAccuracy(),o=a.overall||{};
@@ -66,10 +77,11 @@ function openQuestionsDetails(ids){
 }
 function topicMenu(){
  stopExamTimer();state.exam=false;
- app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n),s=currentTopicStats(n,p);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · Richtig: ${s.right}/${s.graded} · ${s.accuracy===null?'—':s.accuracy+'% richtig'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="secondary" onclick="startTopicUnanswered('${a}')" ${s.openIds.length?'':'disabled'}>▶ ${s.openIds.length} offene Fragen</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
+ app.innerHTML=`<section class="card"><div class="badge">THEMEN-TRAINING</div><h1>Thema auswählen</h1><p class="small">Gleiche Themenlogik wie im bisherigen Trainer. Wähle pro Thema Original, Umformuliert oder Gemischt.</p>${Object.keys(TOPICS).map(n=>{let p=topicProgress(n),a=topicArg(n),s=currentTopicStats(n,p);return `<div style="border-top:1px solid #ddd;padding:14px 0"><h3>${esc(n)}</h3><p class="small">${p.done}/${p.total} bearbeitet · Punkte: ${s.right}/${s.graded} · Ergebnis: ${s.accuracy===null?'—':s.accuracy+'%'} · Fehler: ${s.errors} · Offen: ${s.openIds.length}</p><div class="modes"><button class="secondary" onclick="startTopic('${a}','original')">Original</button><button class="secondary" onclick="startTopic('${a}','reform')">Umformuliert</button><button class="secondary" onclick="startTopic('${a}','mixed')">Gemischt</button><button class="secondary" onclick="startTopicUnanswered('${a}')" ${s.openIds.length?'':'disabled'}>▶ Nur offene Fragen (${s.openIds.length})</button><button class="secondary" onclick="startTopicErrorsOnly('${a}')" ${s.errors?'':'disabled'}>❌ Nur Fehler (${s.errors})</button><button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button></div></div>`}).join('')}<div class="actions"><button class="primary" onclick="home()">← Hauptmenü</button></div></section>`
 }
 function startTopic(encoded,mode){let name=decodeURIComponent(encoded),ids=topicIds(name);if(!ids.length)return alert('Für dieses Thema wurden keine Fragen gefunden.');stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.fullSession=false;state.openOnly=false;state.variantSeed=newVariantSeed();state.mode=mode;state.topic=name;state.order=ids;state.i=0;render()}
 function startTopicUnanswered(encoded){let name=decodeURIComponent(encoded),s=currentTopicStats(name,topicProgress(name)),ids=s.openIds;if(!ids.length)return alert('In „'+name+'“ sind keine offenen Fragen mehr.');stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.fullSession=false;state.openOnly=true;state.variantSeed=newVariantSeed();state.mode='original';state.topic=name;state.order=ids;state.i=0;render()}
+function startTopicErrorsOnly(encoded){let name=decodeURIComponent(encoded),s=currentTopicStats(name,topicProgress(name)),ids=s.errorIds;if(!ids.length)return alert('In „'+name+'“ sind aktuell keine Fehler gespeichert.');stopExamTimer();state.exam=false;state.examWrong=[];state.override=null;state.fullSession=false;state.openOnly=true;state.variantSeed=newVariantSeed();state.mode='original';state.topic=name;state.order=ids;state.i=0;render()}
 function resetTopic(encoded){let name=decodeURIComponent(encoded);if(!confirm('Fortschritt für „'+name+'“ wirklich zurücksetzen?'))return;let p=loadProgress();for(const q of topicIds(name))delete p[q];state.progress=p;localStorage.setItem(KEY,JSON.stringify(p));clearTopicAccuracy(name);topicMenu()}
 
 function stopExamTimer(){if(examTimer){clearInterval(examTimer);examTimer=null}}
