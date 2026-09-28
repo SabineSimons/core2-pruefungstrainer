@@ -50,6 +50,7 @@
             <button class="primary" onclick="startTopic('${a}','original')">Original</button>
             <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
             <button class="primary" onclick="startTopic('${a}','mixed')">Gemischt</button>
+            <button class="secondary" onclick="startTopicUnanswered('${a}')" ${s.openIds.length?'':'disabled'}>Nur offene Fragen (${s.openIds.length})</button>
             <button class="danger" onclick="resetTopic('${a}')">↺ Thema zurücksetzen</button>
           </div>
         </div>`
