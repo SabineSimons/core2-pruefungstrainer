@@ -33,7 +33,7 @@
   function clearSession(topic,mode){let all=loadSessions();delete all[key(topic,mode)];saveSessions(all)}
   function clearTopicSessions(topic){let all=loadSessions(),prefix=encodeURIComponent(topic)+'|';for(const k of Object.keys(all))if(k.startsWith(prefix))delete all[k];saveSessions(all)}
   function firstOpenIndex(topic,ids){try{let all=JSON.parse(localStorage.getItem(KEY+'_topic_progress_v2')||'{}'),done=all[topic]||{};let i=ids.findIndex(q=>!done[String(q)]);return i>0?i:0}catch(e){return 0}}
-  function isTopicRun(){return !!(state&&!state.exam&&state.topic&&Object.prototype.hasOwnProperty.call(TOPICS,state.topic)&&Array.isArray(state.order)&&state.order.length)}
+  function isTopicRun(){return !!(state&&!state.exam&&!state.openOnly&&state.topic&&Object.prototype.hasOwnProperty.call(TOPICS,state.topic)&&Array.isArray(state.order)&&state.order.length)}
   function saveCurrent(){
    if(!isTopicRun())return;
    let all=loadSessions();
