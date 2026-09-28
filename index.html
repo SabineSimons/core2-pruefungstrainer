@@ -13,7 +13,7 @@ fetch('alte-version-bis-pruefung.html?v=20260928-8')
  .then(wrapper=>{
    const marker='return html;}';
    if(!wrapper.includes(marker))throw new Error('Fortsetzungs-Erweiterung konnte nicht eingesetzt werden.');
-   const injection="html=html.replace('</body>','<scr'+'ipt src=\"core2-old-topic-resume.js\"></scr'+'ipt></body>');return html;}";
+   const injection="html=html.replace('</body>','<scr'+'ipt src=\"core2-old-topic-resume.js\"></scr'+'ipt><scr'+'ipt src=\"core2-classic-stats.js?v=20260928-7\"></scr'+'ipt></body>');return html;}";
    wrapper=wrapper.replace(marker,injection);
    document.open();
    document.write(wrapper);
