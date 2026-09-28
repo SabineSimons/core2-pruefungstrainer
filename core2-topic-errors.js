@@ -24,6 +24,30 @@
   }
   window.getTopicErrors=getErrors;
 
+  // Ergebnisanzeige: Bearbeitungs-% bleibt getrennt von der Trefferquote.
+  // Fehler = aktuell falsch gespeicherte Fragen innerhalb des jeweiligen Themas.
+  const baseTopicProgressForStats=topicProgress;
+  topicProgress=function(name){
+   let p=baseTopicProgressForStats(name),ids=topicIds(name).map(String),doneIds=[];
+   try{
+    let all=JSON.parse(localStorage.getItem(KEY+'_topic_progress_v2')||'{}'),t=all[name]||{};
+    doneIds=ids.filter(q=>!!t[q])
+   }catch(e){}
+   // Fallback für ältere gespeicherte Stände.
+   if(!doneIds.length&&p.done){
+    let gp=loadProgress();doneIds=ids.filter(q=>!!gp[q])
+   }
+   let doneSet=new Set(doneIds),errors=getErrors().filter(q=>doneSet.has(String(q))).length;
+   let accuracy=p.done?Math.max(0,Math.round((p.done-errors)/p.done*100)):0;
+   return Object.assign({},p,{accuracy,errors})
+  };
+
+  window.core2OverallStats=function(){
+   let gp=loadProgress(),doneIds=Object.keys(gp).filter(q=>gp[q]),doneSet=new Set(doneIds.map(String));
+   let errors=getErrors().filter(q=>doneSet.has(String(q))).length;
+   return {done:doneIds.length,accuracy:doneIds.length?Math.max(0,Math.round((doneIds.length-errors)/doneIds.length*100)):0,errors}
+  };
+
   window.startTopicErrors=function(mode){
    let ids=getErrors();
    if(!ids.length)return alert('Aktuell sind keine falsch beantworteten Fragen gespeichert.');
