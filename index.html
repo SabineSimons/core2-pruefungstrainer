@@ -8,7 +8,7 @@
 <body>
 <p>Core 2 Prüfungstrainer wird geladen...</p>
 <script>
-fetch('alte-version-bis-pruefung.html')
+fetch('alte-version-bis-pruefung.html?v=20260928-4')
  .then(r=>{if(!r.ok)throw new Error('Gesicherter Trainer konnte nicht geladen werden: '+r.status);return r.text()})
  .then(wrapper=>{
    const marker='return html;}';
