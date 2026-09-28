@@ -9,7 +9,7 @@
     if(Object.keys(window.CORE2_ORIGINAL||{}).length!==314) throw new Error("Originalbank unvollständig");
     if(Object.values(window.CORE2_REFORM||{}).reduce((a,x)=>a+x.length,0)!==628) throw new Error("Umformulierungsbank unvollständig");
     const appScript=document.createElement("script");
-    appScript.src="core2-app.js?v=20260928-5";
+    appScript.src="core2-app.js?v=20260928-6";
     appScript.onerror=()=>{document.getElementById("app").textContent="Trainer konnte nicht geladen werden.";};
     appScript.onload=async()=>{
       try{
@@ -21,7 +21,7 @@
         (0,eval)(expCode);
         if(Object.keys(window.CORE2_EXPLANATIONS||{}).length!==309) throw new Error("Erklärungsbank unvollständig");
         const fixScript=document.createElement("script");
-        fixScript.src="core2-endfix.js?v=20260928-5";
+        fixScript.src="core2-endfix.js?v=20260928-6";
         fixScript.onerror=()=>{document.getElementById("app").textContent="Trainer-Erweiterung konnte nicht geladen werden.";};
         document.body.appendChild(fixScript);
       }catch(e){
