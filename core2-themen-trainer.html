@@ -44,7 +44,7 @@
         const p=topicProgress(name), a=encodeURIComponent(name);
         return `<div style="border-top:1px solid #ddd;padding:16px 0">
           <h3 style="margin-bottom:6px">${esc(name)}</h3>
-          <p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Ergebnis: ${p.accuracy??0}% · Fehler: ${p.errors??0}</p>
+          <p class="small">${p.done}/${p.total} bearbeitet · ${p.pct}% · Offen: ${Math.max(0,p.total-p.done)} · Ergebnis: ${p.accuracy??0}% · Fehler: ${p.errors??0}</p>
           <div class="modes">
             <button class="primary" onclick="startTopic('${a}','original')">Original</button>
             <button class="primary" onclick="startTopic('${a}','reform')">Umformuliert</button>
