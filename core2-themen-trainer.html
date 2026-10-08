@@ -90,5 +90,12 @@
 })();
 </script>
 <script src="core2-topic-errors.js?v=20260928-10"></script>
+<script>
+(function(){
+function speak(t){if(!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='de-DE';u.rate=0.9;speechSynthesis.speak(u)}
+function attach(){const q=document.querySelector('#app .q');if(!q||document.getElementById('sabine-audio'))return;const box=document.createElement('div');box.id='sabine-audio';box.className='actions';function btn(label,fn){const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent=label;b.onclick=fn;box.appendChild(b)}btn('🔊 Frage',()=>speak(q.textContent));document.querySelectorAll('#app .option').forEach((el,i)=>btn('🔊 '+String.fromCharCode(65+i),()=>speak(el.textContent)));btn('⏹ Stopp',()=>speechSynthesis.cancel());q.after(box)}
+new MutationObserver(attach).observe(document.getElementById('app'),{childList:true,subtree:true});attach()
+})();
+</script>
 </body>
 </html>
